@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICELS -- AI Code Evaluator and Learning System</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(145deg,#0a0e17 0%,#121a2e 50%,#0d1321 100%);
+  color:#c8d6e5;
+  font-family:'JetBrains Mono','Fira Code','Source Code Pro',monospace;
+}
+.header{
+  background:linear-gradient(90deg,rgba(16,24,48,.95),rgba(20,30,55,.9));
+  border-bottom:1px solid rgba(99,179,237,.15);
+  padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;color:#fff;
+}
+.logo-text h1{font-size:18px;font-weight:700;color:#e2e8f0;letter-spacing:.05em;margin:0}
+.logo-text p{font-size:11px;color:#64748b;letter-spacing:.1em;margin:0}
+.header-btns{display:flex;gap:8px}
+.btn-ghost{
+  background:transparent;border:1px solid rgba(99,179,237,.2);color:#94a3b8;
+  padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;
+  text-decoration:none;display:inline-block;transition:all .2s;
+}
+.btn-ghost:hover{border-color:#3b82f6;color:#e2e8f0}
+
+.main{display:grid;grid-template-columns:1fr;gap:0;min-height:calc(100vh - 70px)}
+.main.has-result{grid-template-columns:1fr 1fr}
+@media(max-width:900px){.main.has-result{grid-template-columns:1fr}}
+
+.input-panel{padding:20px 24px;display:flex;flex-direction:column}
+.input-panel.has-result{border-right:1px solid rgba(99,179,237,.1)}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel-label{font-size:12px;color:#64748b;letter-spacing:.1em}
+.btn-row{display:flex;gap:6px}
+.btn-sm{
+  padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;border:1px solid;font-family:inherit;
+  transition:opacity .2s;
+}
+.btn-sm:hover{opacity:.8}
+.btn-sample{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25);color:#60a5fa}
+.btn-clear{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#f87171}
+
+#codeInput{
+  flex:1;min-height:400px;
+  background:rgba(6,10,20,.8);border:1px solid rgba(99,179,237,.12);
+  border-radius:8px;padding:16px;color:#c8d6e5;
+  font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.6;
+  resize:vertical;outline:none;tab-size:4;
+}
+#codeInput:focus{border-color:rgba(59,130,246,.3)}
+#codeInput::placeholder{color:#334155}
+
+.btn-evaluate{
+  margin-top:12px;padding:12px 24px;
+  background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;
+  border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+  letter-spacing:.05em;box-shadow:0 4px 15px rgba(59,130,246,.25);font-family:inherit;
+  transition:transform .15s,box-shadow .15s;
+}
+.btn-evaluate:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,.35)}
+.btn-evaluate:active{transform:translateY(0)}
+
+.stats-line{margin-top:10px;font-size:11px;color:#475569;display:flex;gap:16px}
+
+.result-panel{padding:20px 24px;overflow-y:auto;max-height:calc(100vh - 70px);display:none}
+
+.grade-card{
+  display:flex;align-items:center;gap:20px;margin-bottom:24px;
+  padding:20px 24px;background:rgba(6,10,20,.6);border-radius:12px;
+}
+.grade-badge{
+  width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:36px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.grade-info h2{font-size:20px;font-weight:700;color:#e2e8f0;margin:0}
+.grade-info .score{font-size:13px;color:#94a3b8;margin-top:4px}
+.grade-info .summary{font-size:11px;color:#64748b;margin-top:2px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.stat-box{
+  background:rgba(6,10,20,.5);border-radius:8px;padding:10px 14px;
+  border:1px solid rgba(99,179,237,.08);
+}
+.stat-val{font-size:20px;font-weight:700;color:#e2e8f0}
+.stat-label{font-size:10px;color:#64748b;letter-spacing:.1em}
+
+.tabs{display:flex;gap:2px;margin-bottom:16px;background:rgba(6,10,20,.4);border-radius:8px;padding:3px}
+.tab{
+  flex:1;padding:8px 12px;background:transparent;border:1px solid transparent;
+  border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit;
+  text-align:center;transition:all .15s;
+}
+.tab.active{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.3);color:#60a5fa;font-weight:600}
+
+.issue-item{
+  padding:12px 14px;background:rgba(6,10,20,.5);border-radius:8px;
+  display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;
+}
+.issue-tag{
+  font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:600;
+}
+.issue-msg{font-size:12px;color:#c8d6e5;line-height:1.5}
+.issue-line{font-size:10px;color:#475569;margin-top:3px}
+
+.strength-item{
+  padding:12px 14px;background:rgba(5,150,105,.06);border-radius:8px;
+  border-left:3px solid #059669;font-size:12px;color:#a7f3d0;margin-bottom:8px;
+}
+
+.learn-item{
+  padding:16px;background:rgba(6,10,20,.5);border-radius:8px;
+  border:1px solid rgba(99,179,237,.08);margin-bottom:12px;
+}
+.learn-title{font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px}
+.learn-reason{font-size:12px;color:#94a3b8;margin-bottom:10px;line-height:1.5}
+.learn-resource{font-size:11px;color:#64748b;margin-bottom:3px}
+
+.empty-state{text-align:center;padding:60px 20px}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.4}
+.empty-title{font-size:16px;color:#94a3b8;margin-bottom:8px}
+.empty-desc{font-size:13px;color:#475569}
+
+.about-panel{
+  background:rgba(16,24,48,.9);border-bottom:1px solid rgba(99,179,237,.1);
+  padding:0 24px;font-size:13px;line-height:1.7;max-width:800px;
+  max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;
+}
+.about-panel.visible{max-height:200px;padding:20px 24px}
+.about-panel p{margin:0 0 8px;color:#94a3b8}
+.about-panel .credit{margin:0;color:#64748b;font-size:11px}
+
+.no-issues{
+  padding:24px;text-align:center;color:#059669;
+  background:rgba(5,150,105,.06);border-radius:8px;
+  border:1px solid rgba(5,150,105,.15);
+}
+.no-strengths{
+  padding:24px;text-align:center;color:#64748b;
+  background:rgba(6,10,20,.3);border-radius:8px;
+}
+.tab-content{min-height:200px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div class="logo-text">
+      <h1>AICELS</h1>
+      <p>AI CODE EVALUATOR &amp; LEARNING SYSTEM</p>
+    </div>
+  </div>
+  <div class="header-btns">
+    <button class="btn-ghost" id="btnAbout">About</button>
+    <a class="btn-ghost" href="https://github.com/Starborn/AICELS" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div>
+
+<div class="about-panel" id="aboutPanel">
+  <p>AICELS performs static analysis of Python code using AST-based pattern detection.
+  It checks naming conventions, documentation, function structure, type hints,
+  code smells, import organization, and nesting depth -- then generates a
+  personalized learning path based on the results.</p>
+  <p class="credit">W3C AIKR CG / Epistemic Systems Lab -- Ronin Institute</p>
+</div>
+
+<div class="main" id="mainGrid">
+  <div class="input-panel" id="inputPanel">
+    <div class="panel-header">
+      <span class="panel-label">PYTHON CODE INPUT</span>
+      <div class="btn-row">
+        <button class="btn-sm btn-sample" id="btnSample">Load Sample</button>
+        <button class="btn-sm btn-clear" id="btnClear">Clear</button>
+      </div>
+    </div>
+    <textarea id="codeInput" placeholder="Paste your Python code here..." spellcheck="false"></textarea>
+    <button class="btn-evaluate" id="btnEvaluate">Evaluate Code</button>
+    <div class="stats-line" id="statsLine"></div>
+  </div>
+  <div class="result-panel" id="resultPanel"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var codeInput = document.getElementById("codeInput");
+  var resultPanel = document.getElementById("resultPanel");
+  var mainGrid = document.getElementById("mainGrid");
+  var inputPanel = document.getElementById("inputPanel");
+  var statsLine = document.getElementById("statsLine");
+  var aboutPanel = document.getElementById("aboutPanel");
+  var btnAbout = document.getElementById("btnAbout");
+  var btnSample = document.getElementById("btnSample");
+  var btnClear = document.getElementById("btnClear");
+  var btnEvaluate = document.getElementById("btnEvaluate");
+
+  var SAMPLE = "def calculateArea(width, height):\n    result = width * height\n    return result\n\nclass myRectangle:\n    def __init__(self, w, h):\n        self.w = w\n        self.h = h\n\n    def area(self):\n        return self.w * self.h\n\n    def perimeter(self):\n        return (self.w + self.h) * 2\n\ndef processData(data):\n    try:\n        for item in data:\n            if item > 0:\n                if item < 100:\n                    if item != 42:\n                        result = item * 3.14159\n                        print(result)\n    except:\n        print(\"error\")\n\nimport os\nimport sys\n";
+
+  var currentTab = "issues";
+  var currentResult = null;
+  var currentLP = null;
+
+  btnAbout.addEventListener("click", function(){
+    aboutPanel.classList.toggle("visible");
+    btnAbout.textContent = aboutPanel.classList.contains("visible") ? "Close" : "About";
+  });
+
+  btnSample.addEventListener("click", function(){
+    codeInput.value = SAMPLE;
+    hideResult();
+    updateStats();
+  });
+
+  btnClear.addEventListener("click", function(){
+    codeInput.value = "";
+    hideResult();
+    updateStats();
+  });
+
+  btnEvaluate.addEventListener("click", function(){
+    doEvaluate();
+  });
+
+  codeInput.addEventListener("input", updateStats);
+
+  codeInput.addEventListener("keydown", function(e){
+    if(e.key === "Tab"){
+      e.preventDefault();
+      var s = this.selectionStart;
+      var end = this.selectionEnd;
+      this.value = this.value.substring(0,s) + "    " + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = s + 4;
+    }
+  });
+
+  function updateStats(){
+    var c = codeInput.value.trim();
+    if(!c){ statsLine.innerHTML = ""; return; }
+    var lines = codeInput.value.split("\n").length;
+    var tokens = c.split(/\s+/).length;
+    var chars = codeInput.value.length;
+    statsLine.innerHTML = "<span>" + lines + " lines</span><span>" + tokens + " tokens</span><span>" + chars + " chars</span>";
+  }
+
+  function hideResult(){
+    resultPanel.style.display = "none";
+    mainGrid.classList.remove("has-result");
+    inputPanel.classList.remove("has-result");
+  }
+
+  function showResult(){
+    resultPanel.style.display = "block";
+    mainGrid.classList.add("has-result");
+    inputPanel.classList.add("has-result");
+  }
+
+  function countIndentLevels(code){
+    var maxD = 0;
+    var lines = code.split("\n");
+    for(var i = 0; i < lines.length; i++){
+      var line = lines[i];
+      if(!line.trim()) continue;
+      var s = line.replace(/\t/g,"    ");
+      var trimmed = s.replace(/^\s+/, "");
+      var d = Math.floor((s.length - trimmed.length) / 4);
+      if(d > maxD) maxD = d;
+    }
+    return maxD;
+  }
+
+  function analyzeCode(code){
+    var issues = [];
+    var strengths = [];
+    var lines = code.split("\n");
+    var nonEmpty = [];
+    for(var i = 0; i < lines.length; i++){
+      if(lines[i].trim() !== "") nonEmpty.push(lines[i]);
+    }
+
+    var syntaxValid = true;
+    var syntaxError = null;
+    var stack = [];
+    var pairs = {"(":")", "[":"]", "{":"}"};
+
+    for(var i = 0; i < lines.length; i++){
+      var stripped = lines[i].replace(/(["'])(?:(?=(\\?))\2.)*?\1/g,"").replace(/#.*$/,"");
+      for(var j = 0; j < stripped.length; j++){
+        var ch = stripped[j];
+        if(pairs[ch]){
+          stack.push({ch:ch, close:pairs[ch], line:i+1});
+        }
+        if(ch === ")" || ch === "]" || ch === "}"){
+          if(stack.length === 0 || stack[stack.length-1].close !== ch){
+            syntaxValid = false;
+            syntaxError = "Mismatched '" + ch + "' at line " + (i+1);
+            break;
+          }
+          stack.pop();
+        }
+      }
+      if(!syntaxValid) break;
+    }
+    if(syntaxValid && stack.length > 0){
+      syntaxValid = false;
+      syntaxError = "Unclosed '" + stack[stack.length-1].ch + "' from line " + stack[stack.length-1].line;
+    }
+
+    var funcPat = /^(\s*)def\s+(\w+)\s*\(/;
+    var clsPat = /^(\s*)class\s+(\w+)/;
+    var functions = [];
+    var classes = [];
+
+    for(var i = 0; i < lines.length; i++){
+      var fm = lines[i].match(funcPat);
+      if(fm){
+        var indent = fm[1].length;
+        var endIdx = i + 1;
+        while(endIdx < lines.length){
+          var nl = lines[endIdx];
+          if(nl.trim() === ""){ endIdx++; continue; }
+          var nlTrimmed = nl.replace(/^\s+/, "");
+          var nlIndent = nl.length - nlTrimmed.length;
+          if(nlIndent <= indent && nl.trim() !== "") break;
+          endIdx++;
+        }
+        functions.push({
+          name: fm[2], startLine: i, endLine: endIdx, length: endIdx - i,
+          hasDocstring: (i+1 < lines.length && /^\s*("""|''')/.test(lines[i+1])),
+          hasTypeHints: (lines[i].indexOf("->") !== -1)
+        });
+      }
+      var cm = lines[i].match(clsPat);
+      if(cm) classes.push({name:cm[2], line:i});
+    }
+
+    for(var k = 0; k < functions.length; k++){
+      var fn = functions[k];
+      var firstChar = fn.name.charAt(0);
+      if(firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()){
+        issues.push({type:"naming",severity:"warning",message:"Function '" + fn.name + "' uses PascalCase -- PEP 8 recommends snake_case",line:fn.startLine+1});
+      } else if(/[A-Z]/.test(fn.name) && fn.name.indexOf("_") === -1){
+        issues.push({type:"naming",severity:"info",message:"Function '" + fn.name + "' uses camelCase -- PEP 8 recommends snake_case",line:fn.startLine+1});
+      }
+    }
+    for(var k = 0; k < classes.length; k++){
+      var cls = classes[k];
+      var fc = cls.name.charAt(0);
+      if(fc !== fc.toUpperCase() || cls.name.indexOf("_") !== -1){
+        issues.push({type:"naming",severity:"warning",message:"Class '" + cls.name + "' does not use PascalCase",line:cls.line+1});
+      }
+    }
+
+    if(functions.length > 0){
+      var documented = 0;
+      for(var k = 0; k < functions.length; k++){
+        if(functions[k].hasDocstring) documented++;
+      }
+      var ratio = documented / functions.length;
+      if(ratio === 1) strengths.push("All functions have docstrings");
+      else if(ratio >= 0.5) issues.push({type:"documentation",severity:"info",message:(functions.length-documented) + " of " + functions.length + " functions lack docstrings"});
+      else if(ratio > 0) issues.push({type:"documentation",severity:"warning",message:"Only " + documented + " of " + functions.length + " functions have docstrings"});
+      else issues.push({type:"documentation",severity:"warning",message:"No functions have docstrings"});
+    }
+
+    for(var k = 0; k < functions.length; k++){
+      var fn = functions[k];
+      if(fn.length > 50) issues.push({type:"structure",severity:"warning",message:"Function '" + fn.name + "' is " + fn.length + " lines long -- consider refactoring (>50)",line:fn.startLine+1});
+      else if(fn.length > 30) issues.push({type:"structure",severity:"info",message:"Function '" + fn.name + "' is " + fn.length + " lines -- getting long",line:fn.startLine+1});
+    }
+
+    if(functions.length >= 2){
+      var hinted = 0;
+      for(var k = 0; k < functions.length; k++){
+        if(functions[k].hasTypeHints) hinted++;
+      }
+      if(hinted === 0) issues.push({type:"type_hints",severity:"info",message:"No functions use return type hints -- consider adding type annotations"});
+      else if(hinted === functions.length) strengths.push("All functions have return type hints");
+    }
+
+    for(var i = 0; i < lines.length; i++){
+      if(/^\s*except\s*:/.test(lines[i])){
+        issues.push({type:"code_smell",severity:"warning",message:"Bare 'except:' catches all exceptions including SystemExit and KeyboardInterrupt",line:i+1});
+      }
+    }
+
+    var globalsCount = 0;
+    for(var i = 0; i < lines.length; i++){
+      var l = lines[i];
+      var lt = l.trim();
+      if(!lt || lt.charAt(0) === "#") continue;
+      if(/^\w/.test(l) && l.indexOf("=") !== -1 && !/^(def |class |import |from |if |elif |else:|for |while |try:|except|finally:|with |return |raise |assert |pass|break|continue)/.test(lt)){
+        if(!/^[A-Z_]+\s*=/.test(lt)) globalsCount++;
+      }
+    }
+    if(globalsCount > 3) issues.push({type:"code_smell",severity:"warning",message:globalsCount + " mutable global variables detected -- consider encapsulating in a class or function"});
+
+    var magic = 0;
+    for(var i = 0; i < lines.length; i++){
+      var l = lines[i].trim();
+      if(l.charAt(0) === "#" || l.indexOf("import") === 0 || l.indexOf("from") === 0) continue;
+      var nums = l.match(/\b\d+\.?\d*\b/g);
+      if(nums){
+        for(var n = 0; n < nums.length; n++){
+          var v = parseFloat(nums[n]);
+          if(v !== 0 && v !== 1 && v !== 2 && v !== 100){
+            if(!/^[A-Z_]+\s*=/.test(l)) magic++;
+          }
+        }
+      }
+    }
+    if(magic > 5) issues.push({type:"code_smell",severity:"info",message:magic + " magic numbers detected -- consider defining named constants"});
+
+    var maxNest = countIndentLevels(code);
+    if(maxNest > 5) issues.push({type:"structure",severity:"warning",message:"Maximum nesting depth is " + maxNest + " levels -- consider flattening logic"});
+    else if(maxNest > 4) issues.push({type:"structure",severity:"info",message:"Nesting depth reaches " + maxNest + " levels -- watch for complexity"});
+
+    var importLineNums = [];
+    var lastImport = -1;
+    for(var i = 0; i < lines.length; i++){
+      if(/^\s*(import |from )/.test(lines[i])){ importLineNums.push(i); lastImport = i; }
+    }
+    if(importLineNums.length > 0){
+      var firstCode = -1;
+      for(var i = 0; i < lines.length; i++){
+        var t = lines[i].trim();
+        if(t && t.charAt(0) !== "#" && t.indexOf("import") !== 0 && t.indexOf("from") !== 0 && t.indexOf('"""') !== 0 && t.indexOf("'''") !== 0){
+          firstCode = i; break;
+        }
+      }
+      if(firstCode >= 0 && lastImport > firstCode){
+        issues.push({type:"imports",severity:"info",message:"Imports are scattered throughout the file -- PEP 8 recommends grouping imports at the top"});
+      }
+    }
+
+    var longLines = 0;
+    for(var i = 0; i < lines.length; i++){
+      if(lines[i].length > 120) longLines++;
+    }
+    if(longLines > 0) issues.push({type:"style",severity:"info",message:longLines + " line(s) exceed 120 characters"});
+
+    if(syntaxValid) strengths.push("Code parses without syntax errors");
+    var allConcise = true;
+    for(var k = 0; k < functions.length; k++){
+      if(functions[k].length > 30){ allConcise = false; break; }
+    }
+    if(functions.length > 0 && allConcise) strengths.push("All functions are concise (<30 lines)");
+    if(maxNest <= 3) strengths.push("Clean nesting structure");
+
+    var warnings = 0, infos = 0;
+    for(var i = 0; i < issues.length; i++){
+      if(issues[i].severity === "warning") warnings++;
+      if(issues[i].severity === "info") infos++;
+    }
+    var score = Math.max(0, 100 - warnings*15 - infos*5 - (syntaxValid ? 0 : 30));
+    var grade;
+    if(!syntaxValid) grade = "D";
+    else if(score >= 85) grade = "A";
+    else if(score >= 70) grade = "B";
+    else if(score >= 50) grade = "C";
+    else grade = "D";
+
+    return {
+      grade:grade, score:score, syntaxValid:syntaxValid, syntaxError:syntaxError,
+      issues:issues, strengths:strengths,
+      stats:{totalLines:lines.length, codeLines:nonEmpty.length, functions:functions.length, classes:classes.length, maxNesting:maxNest}
+    };
+  }
+
+  function generateLearningPath(r){
+    var s = [];
+    var hasType = function(t){ for(var i=0;i<r.issues.length;i++){if(r.issues[i].type===t)return true;} return false; };
+    if(!r.syntaxValid) s.push({topic:"Python Syntax Fundamentals",reason:"Your code has syntax errors",resources:["docs.python.org/3/tutorial/","realpython.com/python-syntax/"]});
+    if(hasType("documentation")) s.push({topic:"Writing Effective Docstrings",reason:"Some functions lack documentation",resources:["PEP 257 -- Docstring Conventions","realpython.com/documenting-python-code/"]});
+    if(hasType("structure")) s.push({topic:"Code Refactoring Patterns",reason:"Some functions are long or deeply nested",resources:["refactoring.guru/refactoring","Martin Fowler: Refactoring (book)"]});
+    if(hasType("type_hints")) s.push({topic:"Python Type Annotations",reason:"Adding type hints improves readability and tooling",resources:["PEP 484 -- Type Hints","mypy.readthedocs.io"]});
+    if(hasType("code_smell")) s.push({topic:"Clean Code Practices",reason:"Code smells detected",resources:["PEP 8 -- Style Guide","Clean Code by Robert C. Martin"]});
+    if(s.length === 0) s.push({topic:"Advanced Python Patterns",reason:"Your code quality is strong",resources:["Fluent Python by Luciano Ramalho","docs.python.org/3/library/typing.html"]});
+    return s;
+  }
+
+  var gradeColors = {
+    A:{bg:"#059669",label:"Excellent"},
+    B:{bg:"#2563eb",label:"Good"},
+    C:{bg:"#d97706",label:"Needs Improvement"},
+    D:{bg:"#dc2626",label:"Significant Issues"}
+  };
+  var sevColors = {warning:"#f59e0b",info:"#3b82f6",error:"#ef4444"};
+  var typeLabels = {naming:"Naming",documentation:"Docs",structure:"Structure",type_hints:"Types",code_smell:"Code Smell",imports:"Imports",style:"Style"};
+
+  function doEvaluate(){
+    var code = codeInput.value;
+
+    if(!code.trim()){
+      showResult();
+      resultPanel.innerHTML =
+        '<div class="empty-state">' +
+          '<div class="empty-icon">&#8709;</div>' +
+          '<div class="empty-title">No code to evaluate</div>' +
+          '<div class="empty-desc">Paste some Python code or load the sample to get started.</div>' +
+        '</div>';
+      return;
+    }
+
+    currentResult = analyzeCode(code);
+    currentLP = generateLearningPath(currentResult);
+    currentTab = "issues";
+
+    showResult();
+    renderResult();
+  }
+
+  function renderResult(){
+    var r = currentResult;
+    if(!r) return;
+    var gc = gradeColors[r.grade];
+
+    var html =
+      '<div class="grade-card" style="border:1px solid ' + gc.bg + '33">' +
+        '<div class="grade-badge" style="background:linear-gradient(135deg,' + gc.bg + 'cc,' + gc.bg + '88);box-shadow:0 4px 20px ' + gc.bg + '44">' + r.grade + '</div>' +
+        '<div class="grade-info">' +
+          '<h2>' + gc.label + '</h2>' +
+          '<div class="score">Score: ' + r.score + '/100</div>' +
+          '<div class="summary">' + r.issues.length + ' issue' + (r.issues.length!==1?'s':'') + ' found -- ' + r.strengths.length + ' strength' + (r.strengths.length!==1?'s':'') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stats-grid">' +
+        '<div class="stat-box"><div class="stat-val">' + r.stats.codeLines + '</div><div class="stat-label">LINES</div></div>' +
+        '<div class="stat-box"><div class="stat-val">' + r.stats.functions + '</div><div class="stat-label">FUNCTIONS</div></div>' +
+        '<div class="stat-box"><div class="stat-val">' + r.stats.classes + '</div><div class="stat-label">CLASSES</div></div>' +
+      '</div>' +
+      '<div class="tabs">' +
+        '<button class="tab' + (currentTab==="issues"?" active":"") + '" data-tab="issues">Issues (' + r.issues.length + ')</button>' +
+        '<button class="tab' + (currentTab==="strengths"?" active":"") + '" data-tab="strengths">Strengths</button>' +
+        '<button class="tab' + (currentTab==="learning"?" active":"") + '" data-tab="learning">Learning Path</button>' +
+      '</div>' +
+      '<div class="tab-content">';
+
+    if(currentTab === "issues"){
+      if(r.issues.length === 0){
+        html += '<div class="no-issues">No issues detected</div>';
+      } else {
+        for(var i = 0; i < r.issues.length; i++){
+          var issue = r.issues[i];
+          var sc = sevColors[issue.severity] || "#3b82f6";
+          html += '<div class="issue-item" style="border-left:3px solid ' + sc + '">' +
+            '<span class="issue-tag" style="background:' + sc + '18;color:' + sc + '">' + (typeLabels[issue.type]||issue.type) + '</span>' +
+            '<div style="flex:1"><div class="issue-msg">' + issue.message + '</div>' +
+            (issue.line ? '<div class="issue-line">Line ' + issue.line + '</div>' : '') +
+            '</div></div>';
+        }
+      }
+    } else if(currentTab === "strengths"){
+      if(r.strengths.length === 0){
+        html += '<div class="no-strengths">No particular strengths detected -- keep improving</div>';
+      } else {
+        for(var i = 0; i < r.strengths.length; i++){
+          html += '<div class="strength-item">' + r.strengths[i] + '</div>';
+        }
+      }
+    } else if(currentTab === "learning" && currentLP){
+      for(var i = 0; i < currentLP.length; i++){
+        var item = currentLP[i];
+        var resHtml = "";
+        for(var j = 0; j < item.resources.length; j++){
+          resHtml += '<div class="learn-resource">&rarr; ' + item.resources[j] + '</div>';
+        }
+        html += '<div class="learn-item">' +
+          '<div class="learn-title">' + (i+1) + '. ' + item.topic + '</div>' +
+          '<div class="learn-reason">' + item.reason + '</div>' +
+          resHtml +
+        '</div>';
+      }
+    }
+
+    html += '</div>';
+    resultPanel.innerHTML = html;
+
+    var tabs = resultPanel.querySelectorAll(".tab");
+    for(var t = 0; t < tabs.length; t++){
+      tabs[t].addEventListener("click", function(){
+        currentTab = this.getAttribute("data-tab");
+        renderResult();
+      });
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
